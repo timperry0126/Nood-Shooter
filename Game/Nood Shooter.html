@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+	
+		<script src="Classes/Sauce.js"></script>
+		<script src="Classes/Player.js"></script>
+		<script src="Classes/Enemy.js"></script>
+	
+		<script type="text/javascript">
+		
+		// Global variables.
+		var screenHeight = 300;
+		var screenWidth = 600;
+		var score = 0;	//Holds score for amount of enemies destroyed
+		var canvas; // Canvas element.
+		var ctx; // Canvas context.
+		var gameLoop; // Game loop time interval.
+		
+		var pObj = new Player();	//creating of player object
+		
+		var sArr = [];	//Holds all sauce projectiles
+		var enemies = [];	//Holds all enemies on screen
+		var gameOver = false;
+		
+		var offsetX = 75;
+		var offsetY = 17;
+		
+		// This function is called on page load.
+
+
+		function drawGameCanvas() {
+
+			// Get the canvas element.
+			canvas = document.getElementById("gameBoard");
+
+			// Make sure you got it.
+			if (canvas.getContext) {
+			// Specify 2d canvas type.
+			ctx = canvas.getContext("2d");
+
+			// Play the game until the ball stops.
+			gameLoop = setInterval(main, 16);
+
+			// Add keyboard listener.
+			window.addEventListener('keydown', whatKey, true);
+
+			}
+		}
+
+		
+		function main() {
+			//clear canvas
+			ctx.clearRect(0, 0, screenWidth, screenHeight);
+			
+				//Checks to see if Game is Over
+			if( !gameOver ){
+			
+					//Spawns Enemeies
+				if(enemies.length < 5){
+					enemies.push(new Enemy(screenWidth, Math.floor((Math.random() * (screenHeight - 80)) + 30), Math.floor(Math.random() * 30)));
+				}
+					//Moving all the sauce
+				if(sArr.length > 0){
+					sauceMovement(sArr);
+				}		
+				
+					//Moving all enemies		
+				enemyMovement(enemies);
+					
+					//Drawing black screen
+				ctx.fillStyle = "black";
+				ctx.fillRect(0, 0, screenWidth, screenHeight);					
+					
+					//Drawing the player noodle
+				ctx.drawImage(pObj.playerImage, pObj.xPos, pObj.yPos, pObj.width, pObj.height);
+				
+					//draws all sauce to the screen
+				drawToScreen(sArr);
+				
+					//draws all enemies to the screen
+				drawToScreen(enemies);
+				
+				ctx.fillStyle = "white";
+				ctx.font = "30px Arial";
+				ctx.fillText(score,5, 30); 
+				
+				
+					//detect collision between sauce and enemy
+				if(sArr.length > 0){
+						detectCollision(sArr, enemies);
+				}
+			}
+			else{
+				ctx.fillStyle = "black";
+				ctx.fillRect(0, 0, screenWidth, screenHeight);
+				ctx.fillStyle = "white";
+				ctx.font = "100px Arial";
+				ctx.fillText("Game Over",37, 175);
+				ctx.font = "25px Arial";
+				ctx.fillText("Your Score is: " + score ,200, 225);
+			}
+		}
+
+		// Get key press.
+		function sauceMovement(array){
+			for (var i = 0; i < array.length; i++){
+				array[i].xMove(4);
+						
+					//checking all the sauce if they are still within the screen
+				if(array[i].xPos > screenWidth){
+					var old = array.shift(); 
+					delete old;
+				}
+			}
+		}
+		
+		function enemyMovement(e){
+			if(e.length > 0){	//makes sure there are enemies
+				for (var i = 0; i < e.length; i++){
+					e[i].xMove(-1);
+						//checking all the enemies if they are still within the screen
+					if(e[i].xPos < -30){
+						var old = e.shift(); 
+						delete old;
+						gameOver = true;
+					}
+						//Moves enemy between 30 pixels constantly
+					if(e[i].yPos > e[i].yStart + e[i].fluc || e[i].yPos < e[i].yStart - e[i].fluc){
+						e[i].reverseDir();
+					}
+					e[i].yMove(1 * e[i].dMult);
+				}
+			}
+		}
+		
+		function whatKey(evt) {
+		
+			if(evt.keyCode == 38){
+				if(pObj.y > 0){
+					pObj.yMove(-7);
+				}
+			}
+			if(evt.keyCode == 40){
+				if(pObj.y <= screenHeight - pObj.height){
+					pObj.yMove(7);
+				}
+			}
+			if(evt.keyCode == 39){
+				if(sArr.length <= 10){
+				sArr.push(new Sauce(pObj.x + offsetX, pObj.y + offsetY));
+				}
+			}
+			
+		}
+		
+		function detectCollision(ar, e){
+			
+			for(var i = 0; i < ar.length; i++){
+				for(var j = 0; j < e.length; j++){
+						//Check top right of sauce if its inside enemy y pos
+					var first = (ar[i].yPos > e[j].yPos && ar[i].yPos < e[j].yPos + e[j].height);
+						//Check bottom right of sauce if its inside enemy y pos
+					var second = (ar[i].yPos + ar[i].height > e[j].yPos) && (ar[i].yPos + ar[i].height <  e[j].yPos + e[j].height);
+						//Check top right of sauce if its inside enemy x pos
+					var third = (ar[i].xPos > e[j].xPos && ar[i] < e[j].xPos + e[j].width);
+						//Check bottom right of sauce if its inside enemy x pos
+					var fourth = (ar[i].xPos + ar[i].width > e[j].xPos) && (ar[i].xPos + ar[i].width <  e[j].xPos + e[j].width);
+					
+					if( (first || second) && (third || fourth) ){
+							score++;
+							var temp = e[0];
+							e[0] = e[j];
+							e[j] = temp;
+							var old = enemies.shift();
+							delete old;
+					}
+				}
+			}
+		}
+		
+		function drawToScreen(array){
+			for(var i = 0; i < array.length; i++){
+					var xCoord = array[i].xPos; 
+					var yCoord = array[i].yPos;
+					
+					ctx.drawImage(array[i].image, xCoord, yCoord, array[i].width, array[i].height);
+				}
+		}
+		
+		</script>
+		<title>Dope AF</title>
+		
+		<style>
+		
+		body {
+			background-image: url("Assets/PastaBG.jpg");
+			background-size: cover;
+		}
+		
+		canvas{
+			padding-left: 0;
+			padding-right: 0;
+			margin-left: auto;
+			margin-right: auto;
+			display: block;
+			width: 700px;
+		}
+		
+		h1{
+			text-align: center;
+			font-size: 3em;
+			font-family: Comic Sans MS;
+		}
+		
+		</style>
+	</head>
+	
+	<body onload="drawGameCanvas()">
+		<h1 size = 2em>
+		Nood Shooter
+		</h1>
+		<div>
+			<canvas id="gameBoard" width="600" height="300">
+			</canvas>
+			<!-- <audio autoplay loop>
+  				<source src="Assets/Pizza Time.mp3" type="audio/mp3">
+			</audio> --> 
+		</div>
+		
+		<div id="result"></div>
+		
+	</body>
+
+</html>
